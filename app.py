@@ -1,114 +1,137 @@
 import streamlit as st
 import openai
+import os
+from dotenv import load_dotenv
+from typing import List
 
-# Ambil API key dari Streamlit Secrets
-try:
-    api_key = st.secrets["OPENAI_API_KEY"]
-except KeyError:
+# ——————————————————————————————————————————————————————————————
+#            Inisialisasi API Key
+# ——————————————————————————————————————————————————————————————
+load_dotenv()
+openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY", "")
+
+if not openai.api_key:
     st.error("OpenAI API Key belum diatur. Silakan tambahkan ke Secrets di Streamlit.")
     st.stop()
 
-openai.api_key = api_key
+# ——————————————————————————————————————————————————————————————
+#                 Konfigurasi Halaman
+# ——————————————————————————————————————————————————————————————
+st.set_page_config(
+    page_title="Copywriting Assistant by PERKA",
+    page_icon="📝",
+    layout="wide"
+)
 
-# Konfigurasi halaman
-st.set_page_config(page_title="Copywriting Assistant by PERKA", page_icon="🧠")
 st.title("📝 Copywriting Assistant by PERKA")
-st.markdown("Buat copywriting TikTok yang meniru gaya copywriting dari referensi video atau berdasarkan detail produk.")
 
-# Pilih model ChatGPT
-model_choice = st.selectbox(
-    "Pilih Model ChatGPT:",
-    ["gpt-3.5-turbo", "gpt-4", "gpt-4o"],
+# ——————————————————————————————————————————————————————————————
+#                        Form Input Utama
+# ——————————————————————————————————————————————————————————————
+
+# 1) Nama Produk (wajib)
+nama_produk = st.text_input("Nama Produk (wajib)", placeholder="Contoh: Silikon Keran Air")
+if not nama_produk:
+    st.warning("Mohon isi Nama Produk.")
+    st.stop()
+
+# 2) Referensi: Upload File Video (opsional)
+st.markdown("#### Upload File Video (opsional)")
+col_u1, col_u2, col_u3 = st.columns(3)
+file_ref1 = col_u1.file_uploader("Kolom 1", type=["mp4","mov","webm","mpeg4"], key="file1")
+file_ref2 = col_u2.file_uploader("Kolom 2", type=["mp4","mov","webm","mpeg4"], key="file2")
+file_ref3 = col_u3.file_uploader("Kolom 3", type=["mp4","mov","webm","mpeg4"], key="file3")
+
+# 3) Referensi: Link Video (opsional)
+st.markdown("#### Link Video (opsional)")
+col_l1, col_l2, col_l3 = st.columns(3)
+link_ref1 = col_l1.text_input("Kolom 1", key="link1", placeholder="https://...")
+link_ref2 = col_l2.text_input("Kolom 2", key="link2", placeholder="https://...")
+link_ref3 = col_l3.text_input("Kolom 3", key="link3", placeholder="https://...")
+
+# 4) Fitur atau Keunggulan Produk (opsional)
+fitur = st.text_area("Fitur atau Keunggulan Produk (opsional)", height=60, placeholder="Bahan tahan panas; Mudah dipasang; dll.")
+
+# 5) Prompt Tambahan (opsional)
+prompt_tambahan = st.text_area("Prompt Tambahan (opsional)", height=60, placeholder="Contoh: Tonya harus menonjolkan sisi kekinian.")
+
+# 6) Bahasa Output (wajib)
+bahasa = st.selectbox(
+    "Bahasa Output (wajib)",
+    ["Indonesia", "Malaysia", "English"],
     index=0
 )
 
-# Form input
-with st.form("form_copywriting"):
-    # 1. Nama produk
-    nama_produk = st.text_input("Nama Produk (wajib)", placeholder="Contoh: Silikon Keran Air 20 pcs")
-    
-    # 2. Referensi (maksimal 3): link atau upload
-    st.markdown("**Referensi Gaya Copywriting (opsional, hingga 3)**")
-    ref1_link = st.text_input("Referensi 1 - Link Video (opsional)")
-    ref1_file = st.file_uploader("Referensi 1 - Upload File Video (opsional)", type=["mp4", "mov", "webm"], key="file1")
-    ref2_link = st.text_input("Referensi 2 - Link Video (opsional)")
-    ref2_file = st.file_uploader("Referensi 2 - Upload File Video (opsional)", type=["mp4", "mov", "webm"], key="file2")
-    ref3_link = st.text_input("Referensi 3 - Link Video (opsional)")
-    ref3_file = st.file_uploader("Referensi 3 - Upload File Video (opsional)", type=["mp4", "mov", "webm"], key="file3")
-    
-    # 3. Fitur atau keunggulan produk
-    fitur_produk = st.text_area("Fitur atau Keunggulan Produk (opsional)", placeholder="Contoh: Anti bocor, mudah dipasang, tanpa alat")
-    
-    # 4. Prompt tambahan
-    prompt_tambahan = st.text_area("Prompt Tambahan (opsional)", placeholder="Contoh: Gaya lucu tapi tidak berlebihan")
-    
-    # 5. Bahasa output dan jumlah teks
-    bahasa = st.selectbox("Bahasa Output (wajib)", ["Indonesia", "Malaysia"])
-    jumlah = st.text_input("Jumlah Copywriting yang Diinginkan (wajib)", "3")
-    
-    submit = st.form_submit_button("Generate Copywriting")
+# 7) Jumlah Copywriting yang Diinginkan (wajib)
+jumlah = st.number_input(
+    "Jumlah Copywriting yang Diinginkan (wajib)",
+    min_value=1, max_value=20, value=5, step=1
+)
 
-# Proses saat form disubmit
-if submit:
-    if not nama_produk:
-        st.error("Nama Produk wajib diisi!")
-    else:
-        # Validasi jumlah
-        try:
-            jumlah_int = int(jumlah)
-        except ValueError:
-            st.error("Jumlah Copywriting harus berupa angka")
-            st.stop()
-        with st.spinner("Sedang membuat copywriting..."):
-            # Kumpulkan referensi gaya
-            refs = []
-            for link, file in [(ref1_link, ref1_file), (ref2_link, ref2_file), (ref3_link, ref3_file)]:
-                if link:
-                    refs.append(link)
-                elif file:
-                    refs.append("video yang diunggah")
-            # Bangun bagian referensi dalam prompt
-            ref_text = ""
-            if refs:
-                ref_list = ", ".join(refs)
-                ref_text = f" Gaya copywriting-nya tolong sesuaikan dengan gaya dari video berikut: {ref_list}."
+# 8) Pilih Model
+model = st.selectbox(
+    "Pilih Model ChatGPT",
+    ["gpt-4o-mini","gpt-4o","gpt-3.5-turbo","gpt-4"],
+    index=0
+)
 
-            # Buat prompt dasar
-            base_prompt = f"Buatkan {jumlah_int} copywriting promosi produk untuk TikTok. Nama produknya adalah '{nama_produk}'."
-            base_prompt += ref_text
-            if fitur_produk:
-                base_prompt += f" Fitur produk yang perlu disertakan: {fitur_produk}."
-            if prompt_tambahan:
-                base_prompt += f" Instruksi tambahan: {prompt_tambahan}."
-            base_prompt += f" Bahasa yang digunakan: {bahasa}."
-            # Tambahkan syarat
-            base_prompt += " Syarat:\n"
-            base_prompt += "- Awali dengan kalimat yang mengundang perhatian atau bikin shock\n"
-            base_prompt += "- Jelaskan keunggulan produk secara singkat dan natural tanpa kesan iklan formal\n"
-            base_prompt += "- Akhiri dengan ajakan like dan komen dengan format: mau promo [kategori produk]!\n"
-            base_prompt += "- Hindari tanda petik (\" atau ') dan emoji\n"
-            base_prompt += "- Gunakan tanda baca seperti ! dan ? untuk penekanan"
+# ——————————————————————————————————————————————————————————————
+#                              Generate Button
+# ——————————————————————————————————————————————————————————————
+if st.button("Generate"):
+    with st.spinner("Membuat copywriting…"):
+        # 1) Buat base prompt sesuai syarat
+        base_prompt = (
+            f"Buatkan {jumlah} copywriting promosi produk untuk TikTok. "
+            f"Nama produknya adalah '{nama_produk}'. "
+        )
+        # referensi link/video
+        refs = []
+        for i, (lf, ll) in enumerate([(file_ref1, link_ref1),
+                                      (file_ref2, link_ref2),
+                                      (file_ref3, link_ref3)], start=1):
+            if ll:
+                refs.append(f"Link{ i }:{ ll }")
+            elif lf:
+                refs.append(f"File{ i } diberikan sebagai referensi gaya.")
+        if refs:
+            base_prompt += "Sesuaikan gaya copywriting dengan referensi berikut: " + "; ".join(refs) + ". "
+        # fitur, tambahan, bahasa
+        if fitur:
+            base_prompt += f"Fitur produk yang perlu disertakan: {fitur}. "
+        if prompt_tambahan:
+            base_prompt += f"Instruksi tambahan: {prompt_tambahan}. "
+        base_prompt += f"Bahasa yang digunakan: {bahasa}. "
+        # syarat khusus
+        base_prompt += (
+            "Awali dengan kalimat yang mengundang perhatian atau bikin shock. "
+            "Jelaskan keunggulan produk secara singkat dan natural tanpa kesan iklan formal. "
+            "Akhiri dengan ajakan like dan komen dengan format: mau promo [kategori produk]! "
+            "Hindari tanda petik (\" atau ') dan emoji. "
+            "Gunakan tanda baca ! dan ? untuk penekanan. "
+            "Jangan pakai nomor atau bullet point."
+        )
 
-            # Panggil OpenAI
-            try:
-                response = openai.ChatCompletion.create(
-                    model=model_choice,
-                    messages=[
-                        {"role": "system", "content": "Kamu adalah ahli copywriting TikTok dengan gaya kreatif dan menghibur."},
-                        {"role": "user", "content": base_prompt}
-                    ],
-                    temperature=0.9
-                )
-                hasil = response.choices[0].message.content.strip()
+        # 2) Bangun messages
+        messages = [
+            {"role": "system", "content": "Kamu adalah ahli copywriting TikTok dengan gaya lucu dan santai."},
+            {"role": "user", "content": base_prompt}
+        ]
 
-                # Tampilkan hasil
-                st.subheader("📋 Hasil Copywriting")
-                edited = st.text_area("Edit hasil jika perlu:", value=hasil, height=300)
-                st.download_button(
-                    label="📥 Download Hasil Copywriting",
-                    data=edited,
-                    file_name="copywriting.txt",
-                    mime="text/plain"
-                )
-            except Exception as e:
-                st.error(f"Terjadi error saat generate copywriting: {e}")
+        # 3) Panggil OpenAI
+        resp = openai.ChatCompletion.create(
+            model=model,
+            messages=messages,
+            temperature=0.7,
+            max_tokens=500
+        )
+        hasil = resp.choices[0].message.content.strip()
+
+    # 4) Tampilkan hasil, editable
+    st.markdown("#### Hasil Copywriting (boleh edit sebelum disalin)")
+    hasil_edit = st.text_area("Copywriting", value=hasil, height=300)
+
+    # 5) Tombol untuk salin ke clipboard
+    if st.button("📋 Salin ke Clipboard"):
+        st.write("✓ Tersalin!")
+

@@ -14,10 +14,10 @@ if not openai.api_key:
 #  App config & header
 st.set_page_config(
     page_title="Copywriting Assistant by PERKA",
-    page_icon="✍️",
+    page_icon="📝",
     layout="wide",
 )
-st.title("✍️ Copywriting Assistant by **PERKA**")
+st.title("📝 Copywriting Assistant by **PERKA**")
 st.markdown(
     """
     Buat copywriting TikTok yang **lucu, santai**, dan **natural**  

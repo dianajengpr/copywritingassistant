@@ -20,8 +20,8 @@ st.set_page_config(
 st.title("📝 Copywriting Assistant by **PERKA**")
 st.markdown(
     """
-    Buat copywriting TikTok yang **lucu, santai**, dan **natural**  
-    *Tanpa tanda petik (\" atau ')—tapi boleh tanda seru (!) & tanya (?) untuk penekanan.*
+    **Asisten Copywriting TikTok kamu— otomatis, praktis, dan siap jualan!**
+    Tinggal isi data produk, pilih output, dan dapatkan copywriting yang siap tarik perhatian di FYP.
     """
 )
 

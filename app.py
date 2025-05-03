@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from typing import List
 
 load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 if not api_key:
     st.error("OpenAI API Key belum diatur. Silakan tambahkan ke Secrets di Streamlit.")

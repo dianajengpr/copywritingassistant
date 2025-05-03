@@ -34,23 +34,20 @@ nama_produk = st.text_input(
 )
 
 # ————————————————
-# 📑 Referensi Gaya Copywriting (link / file), maksimum 3
+# 📑 Referensi Gaya Copywriting (opsional, hingga 3)
 # ————————————————
 st.header("📑 Referensi Gaya Copywriting (opsional, hingga 3)")
 link_refs = []
 file_refs = []
 for i in range(1, 4):
-    col_link, col_file = st.columns([2, 3])
-    # 1) Link Video
+    col_link, col_file = st.columns(2)
     link = col_link.text_input(
         f"Referensi {i} – Link Video (opsional)",
         placeholder="https://...",
         key=f"link_ref_{i}"
     )
-    # 2) File uploader dengan label terpisah
-    col_file.markdown(f"**Referensi {i} – File Video (opsional)**")
     file = col_file.file_uploader(
-        label="",
+        f"Referensi {i} – File Video (opsional)",
         type=["mp4", "mov", "webm", "mpeg4"],
         key=f"file_ref_{i}"
     )

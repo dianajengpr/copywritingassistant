@@ -1,56 +1,68 @@
 import streamlit as st
 import openai
 import os
+from dotenv import load_dotenv
+from typing import List
 
-# Judul dan branding
-st.set_page_config(page_title="Copywriting Assistant", layout="centered")
-st.title("📝 Copywriting Assistant")
-st.caption("Built by PERKA")
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
 
-# API Key (isi manual langsung di Streamlit secret atau variable lokal)
-openai.api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    st.error("OpenAI API Key belum diatur. Silakan tambahkan ke Secrets di Streamlit.")
+    st.stop()
 
-# Form Input
-with st.form("input_form"):
-    nama_produk = st.text_input("Nama Produk (wajib)")
-    link_video = st.text_input("Link Video Contoh (opsional)")
-    fitur_produk = st.text_area("Fitur / Keunggulan Produk (opsional)")
-    prompt_tambahan = st.text_area("Prompt Tambahan (opsional)")
-    bahasa = st.selectbox("Bahasa", ["Bahasa Indonesia", "Bahasa Malaysia"])
-    jumlah = st.slider("Jumlah Copywriting yang Ingin Dihasilkan", 1, 10, 3)
-    submit = st.form_submit_button("Generate")
+client = openai.OpenAI(api_key=api_key)
 
-if submit:
-    if not nama_produk:
-        st.error("⚠️ Nama produk wajib diisi.")
-    else:
-        with st.spinner("⏳ Generating copywriting..."):
-            # Buat prompt dasar
-            base_prompt = f"Buatkan {jumlah} copywriting promosi produk untuk TikTok. Nama produknya adalah '{nama_produk}'."
-            if link_video:
-                base_prompt += f" Gaya copywriting-nya tolong sesuaikan dengan gaya dari video ini: {link_video}."
-            if fitur_produk:
-                base_prompt += f" Fitur produk yang perlu disertakan: {fitur_produk}."
-            if prompt_tambahan:
-                base_prompt += f" Instruksi tambahan: {prompt_tambahan}."
-            base_prompt += f" Bahasa yang digunakan: {bahasa}. "
-            base_prompt += "Hindari penggunaan tanda petik satu (') dan dua (\"). Gunakan tanda seru (!) dan tanda tanya (?) jika perlu. Jangan beri penomoran atau bullet point."
+st.set_page_config(page_title="Copywriting Assistant by PERKA", page_icon="🧠")
 
-            # Request ke OpenAI
-            try:
-                response = openai.ChatCompletion.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": "Kamu adalah copywriter profesional spesialis konten TikTok."},
-                        {"role": "user", "content": base_prompt}
-                    ],
-                    temperature=0.8
-                )
+st.title("🧠 Copywriting Assistant by PERKA")
 
-                hasil = response.choices[0].message.content.strip()
-                st.subheader("Hasil Copywriting")
-                result_text = st.text_area("Hasil (bisa diedit)", value=hasil, height=300)
-                st.download_button("📥 Download hasil", result_text, file_name="copywriting.txt")
+st.markdown("Buat copywriting lucu, santai, dan menghibur untuk video TikTok.")
 
-            except Exception as e:
-                st.error(f"❌ Error: {e}")
+product_name = st.text_input("Nama Produk (wajib)")
+video_url = st.text_input("Link Video Contoh (opsional)")
+features = st.text_area("Fitur atau Keunggulan Produk (opsional)")
+custom_prompt = st.text_area("Prompt Tambahan (opsional)")
+language = st.selectbox("Bahasa", ["Indonesia", "Malaysia"])
+num_texts = st.slider("Jumlah Copywriting yang Ingin Dihasilkan", 1, 10, 3)
+
+if st.button("Generate"):
+    if not product_name:
+        st.error("Nama Produk wajib diisi.")
+        st.stop()
+
+    with st.spinner("Sedang membuat copywriting..."):
+        prompt = f"""
+Buatkan {num_texts} teks voice over TikTok dengan gaya santai, lucu, dan menghibur untuk produk bernama '{product_name}'.
+Jika diberikan contoh video, tiru gaya copywriting-nya (bukan suaranya).
+Gunakan bahasa {language}.
+
+Fitur produk: {features if features else "-"}
+Link video contoh (opsional): {video_url if video_url else "-"}
+Permintaan khusus: {custom_prompt if custom_prompt else "-"}
+
+Syarat:
+- Awali dengan kalimat yang mengundang perhatian atau bikin shock
+- Jelaskan keunggulan produk secara singkat dan natural tanpa kesan iklan formal
+- Akhiri dengan ajakan like dan komen dengan format: mau promo [kategori produk]!
+- Hindari tanda petik (" atau ') dan emoji
+- Gunakan tanda baca seperti ! dan ? untuk penekanan
+
+Format: hasilkan dalam bentuk kalimat copywriting, bukan poin-poin atau daftar terstruktur.
+        """
+
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Kamu adalah copywriter profesional spesialis TikTok."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.9,
+                max_tokens=1200
+            )
+            result = response.choices[0].message.content.strip()
+            st.success("✅ Copywriting berhasil dibuat!")
+            st.text_area("Hasil Copywriting", result, height=400)
+        except Exception as e:
+            st.error(f"Terjadi kesalahan: {e}")

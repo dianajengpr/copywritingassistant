@@ -86,7 +86,7 @@ if submitted:
             "Syarat:\n"
             "- Awali dengan kalimat yang mengundang perhatian atau bikin shock.\n"
             "- Jelaskan keunggulan produk secara singkat dan natural tanpa kesan iklan formal.\n"
-            "- Akhiri dengan ajakan like dan komen dengan format: mau promo [kategori produk]!\n"
+            "- Akhiri dengan ajakan cek keranjang kuning!\n"
             "- Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
             "- Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
             "- Jangan gunakan nomor, bullet point, atau daftar."

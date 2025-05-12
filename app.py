@@ -20,14 +20,14 @@ def progress_hook(d):
         st.text(f"Downloading… {d.get('_percent_str', '')} ETA {d.get('_eta_str', '')}")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Load API key
+# Load OpenAI API key dari Streamlit secrets
 openai.api_key = st.secrets.get("OPENAI_API_KEY")
 if not openai.api_key:
     st.error("⚠️ OpenAI API Key belum diatur. Tambahkan melalui Streamlit Secrets.")
     st.stop()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Config UI
+# Konfigurasi UI
 st.set_page_config(
     page_title="Copywriting Assistant by PERKA",
     page_icon="📝",
@@ -42,7 +42,7 @@ st.markdown(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Form Input
+# Input form
 with st.form("copy_form", clear_on_submit=False):
     st.subheader("Input Data Produk")
     nama_produk = st.text_input("📌 Nama Produk", placeholder="Contoh: Silikon Keran Air")
@@ -61,14 +61,16 @@ with st.form("copy_form", clear_on_submit=False):
 
 # ─────────────────────────────────────────────────────────────────────────────
 if submitted:
+    # validasi input nama produk
     if not nama_produk.strip():
         st.warning("Mohon isi Nama Produk dulu.")
         st.stop()
 
     transcript = None
-    # Proses transkripsi jika ada video referensi
+    # Proses download & transkripsi jika referensi video ada
     if video_link or uploaded_file:
         with st.spinner("🔊 Mengambil & transkrip video…"):
+            # simpan video sementara
             tmp_vid = os.path.join(tempfile.gettempdir(), "ref_video.mp4")
             if video_link:
                 ydl_opts = {
@@ -82,60 +84,61 @@ if submitted:
                     ydl.extract_info(video_link, download=False)
                     ydl.download([video_link])
             else:
-                tmp_vid = os.path.join(tempfile.gettempdir(), uploaded_file.name)
-                with open(tmp_vid, "wb") as f:
+                with open(os.path.join(tempfile.gettempdir(), uploaded_file.name), "wb") as f:
                     f.write(uploaded_file.getbuffer())
+                tmp_vid = os.path.join(tempfile.gettempdir(), uploaded_file.name)
 
             # Transkripsi via OpenAI Whisper API
             with open(tmp_vid, "rb") as audio_f:
                 res = openai.Audio.transcribe("whisper-1", audio_f)
             transcript = res.get("text", "").strip()
 
-    # Siapkan prompt dengan gaya TikTok Gen Z
+            # Tampilkan hasil transkrip mentah
+            st.subheader("Transkrip Mentah dari Video Referensi")
+            st.code(transcript or "(kosong)", language="text")
+
+            # Cek apakah transkrip mengandung lirik lagu TikTok yang umum
+            lower = transcript.lower()
+            # Contoh filter sederhana: kata kunci lirik populer
+            if any(kw in lower for kw in ["lucky girl syndrome", "lucky girl", "baby", "chorus"]):
+                st.warning("⚠️ Transkrip terdeteksi lirik lagu, transkrip akan diabaikan untuk generate copywriting.")
+                transcript = None
+
+    # Siapkan prompt ChatGPT
     system_msg = {
         "role": "system",
         "content": (
-            "Kamu adalah penulis copywriting TikTok yang jago bikin konten Gen Z: "
-            "bahasa santai, tidak formla, dan relatable. "
-            "Gunakan struktur hook – keunggulan – CTA."
+            "Kamu copywriter TikTok Gen Z: bahasa santai, tidak formal, relatable, "
+            "struktur hook – keunggulan – CTA."
         )
     }
     user_msg = f"Buat {jumlah} copywriting promosi produk TikTok untuk {nama_produk}.\n"
+
+    # Jika transkrip valid, jadikan dasar utama
     if transcript:
         user_msg += (
-            "Pakai transkrip ini sebagai sumber utama:\n" +
+            "Gunakan transkrip ini sebagai sumber utama dan buat ulang copywriting sesuai narasi berikut:\n" +
             f"{transcript}\n"
-            "Buat ulang copywriting sesuai cerita di transkrip, "
-            "Awali dengan kalimat yang mengundang perhatian atau bikin shock,"
-            "Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
-            "Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
-            "Jangan gunakan nomor, bullet point, atau daftar."
-            "Tidak memakai kata ganti orang seperti: aku, kamu, lo, gue, dia."
-            "Gaya netral, tetap ringan dan relatable."
-            "Gunakan hook atau kalimat awalan yang mirip mirip dengan transkrip."
-            "tapi tetap hook-body-CTA.\n"
         )
+
+    # Tambahkan detail produk
     if fitur_produk.strip():
         user_msg += f"Keunggulan: {fitur_produk.strip()}.\n"
     if prompt_tambahan.strip():
         user_msg += f"Instruksi tambahan: {prompt_tambahan.strip()}.\n"
+
+    # Aturan gaya akhir
     user_msg += (
         f"Bahasa: {bahasa}.\n"
-        "-- Gunakan bahasa ala ala TikTok.\n"
-        "-- Hindari kata-kata kaku seperti ‘kenyamanan dapur’.\n"
-        "-- Boleh lebay, bisa curhat atau satire, asal tetap promosi.\n"
-        "-- Awali dengan kalimat yang mengundang perhatian atau bikin shock,"
-        "-- Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
-        "-- Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
-        "-- Jangan gunakan nomor, bullet point, atau daftar."
-        "-- Tidak memakai kata ganti orang seperti: aku, kamu, lo, gue, dia."
-        "-- Gaya netral, tetap ringan dan relatable."
-        "-- Gunakan hook atau kalimat awalan yang mirip mirip dengan transkrip."
-        "-- Akhiri dengan ajakan cek keranjang kuning!"
+        "- Hindari kata formal atau kaku.\n"
+        "- Tidak menggunakan kata ganti orang (aku, kamu, lo, gue, dia).\n"
+        "- Gunakan bahasa ringan, dramatis, atau lebay khas TikTok.\n"
+        "- Awali dengan hook yang catchy tanpa angka atau bullet.\n"
+        "- Akhiri dengan ajakan cek keranjang kuning!"
     )
     messages = [system_msg, {"role": "user", "content": user_msg}]
 
-    # Panggil OpenAI ChatCompletion
+    # Kirim request ke OpenAI ChatCompletion
     with st.spinner("🚀 Menghubungi OpenAI…"):
         try:
             resp = openai.ChatCompletion.create(
@@ -149,7 +152,7 @@ if submitted:
             st.error(f"Gagal generate: {e}")
             st.stop()
 
-    # Tampilkan hasil dan tombol unduh
+    # Tampilkan hasil
     st.subheader("Hasil Copywriting")
     edited = st.text_area("✏️ Edit jika perlu:", value=hasil, height=300)
     st.download_button(

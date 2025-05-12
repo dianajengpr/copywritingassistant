@@ -104,11 +104,9 @@ if submitted:
                     "http_headers": {"User-Agent": "Mozilla/5.0"},
                 }
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    # cek URL valid
                     ydl.extract_info(video_link, download=False)
                     ydl.download([video_link])
             else:
-                # simpan upload
                 tmp_vid = os.path.join(tempfile.gettempdir(), uploaded_file.name)
                 with open(tmp_vid, "wb") as f:
                     f.write(uploaded_file.getbuffer())
@@ -148,7 +146,7 @@ if submitted:
         "- Awali dengan kalimat yang mengundang perhatian atau bikin shock.\n"
         "- Jelaskan keunggulan produk secara singkat dan natural tanpa kesan iklan formal.\n"
         "- Akhiri dengan ajakan cek keranjang kuning!\n"
-        "- Hindari tanda petik ("'" atau ")—emoji juga tidak usah.\n"
+        "- Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
         "- Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
         "- Jangan gunakan nomor, bullet point, atau daftar."
     )

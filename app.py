@@ -96,7 +96,7 @@ if submitted:
         "role": "system",
         "content": (
             "Kamu adalah penulis copywriting TikTok yang jago bikin konten Gen Z: "
-            "ngocol, lebay, curhat, dan relatable. "
+            "bahasa santai, tidak formla, dan relatable. "
             "Gunakan struktur hook – keunggulan – CTA."
         )
     }
@@ -106,6 +106,10 @@ if submitted:
             "Pakai transkrip ini sebagai sumber utama:\n" +
             f"{transcript}\n"
             "Buat ulang copywriting sesuai cerita di transkrip, "
+            "Awali dengan kalimat yang mengundang perhatian atau bikin shock,"
+            "Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
+            "Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
+            "Jangan gunakan nomor, bullet point, atau daftar."
             "tapi tetap hook-body-CTA.\n"
         )
     if fitur_produk.strip():
@@ -117,6 +121,10 @@ if submitted:
         "-- Gunakan bahasa ala ala TikTok.\n"
         "-- Hindari kata-kata kaku seperti ‘kenyamanan dapur’.\n"
         "-- Boleh lebay, bisa curhat atau satire, asal tetap promosi.\n"
+        "-- Awali dengan kalimat yang mengundang perhatian atau bikin shock,"
+        "-- Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
+        "-- Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
+        "-- Jangan gunakan nomor, bullet point, atau daftar."
         "-- Akhiri dengan ajakan cek keranjang kuning!"
     )
     messages = [system_msg, {"role": "user", "content": user_msg}]

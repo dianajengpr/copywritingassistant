@@ -91,36 +91,33 @@ if submitted:
                 res = openai.Audio.transcribe("whisper-1", audio_f)
             transcript = res.get("text", "").strip()
 
-    # Siapkan prompt
+    # Siapkan prompt dengan gaya TikTok Gen Z
     system_msg = {
         "role": "system",
         "content": (
-            "Kamu ahli copywriting TikTok: gaya lucu, santai, perhatian; "
-            "struktur utuh: hook – body – CTA."
+            "Kamu adalah penulis copywriting TikTok yang jago bikin konten Gen Z: "
+            "ngocol, lebay, curhat, dan relatable. "
+            "Gunakan struktur hook – keunggulan – CTA."
         )
     }
-    user_msg = f"Buatkan {jumlah} copywriting promosi produk TikTok.\nProduk: {nama_produk}.\n"
+    user_msg = f"Buat {jumlah} copywriting promosi produk TikTok untuk {nama_produk}.\n"
+    if transcript:
+        user_msg += (
+            "Pakai transkrip ini sebagai sumber utama:\n" +
+            f"{transcript}\n"
+            "Buat ulang copywriting sesuai cerita di transkrip, "
+            "tapi tetap hook-body-CTA.\n"
+        )
     if fitur_produk.strip():
         user_msg += f"Keunggulan: {fitur_produk.strip()}.\n"
     if prompt_tambahan.strip():
         user_msg += f"Instruksi tambahan: {prompt_tambahan.strip()}.\n"
-    if transcript:
-        user_msg += (
-            "Gunakan transkrip berikut sebagai dasar utama. "
-            "Buat ulang copywriting promosi berdasarkan isi transkrip ini, "
-            "namun dengan gaya hook-body-CTA khas TikTok. "
-            "Gunakan kalimat kasual, menarik, dan menyentuh audiens. "
-            f"Transkrip: {transcript}.\n"
-        )
     user_msg += (
         f"Bahasa: {bahasa}.\n"
-        "Syarat:\n"
-        "- Awali dengan kalimat bikin shock!\n"
-        "- Jelaskan keunggulan natural tanpa kesan formal.\n"
-        "- Akhiri cek keranjang kuning!\n"
-        "- Hindari tanda petik (\" atau '), emoji tidak usah.\n"
-        "- Pakai ! dan ? untuk penekanan.\n"
-        "- Tanpa bullet, nomor, atau daftar."
+        "-- Gunakan bahasa ala ala TikTok.\n"
+        "-- Hindari kata-kata kaku seperti ‘kenyamanan dapur’.\n"
+        "-- Boleh lebay, bisa curhat atau satire, asal tetap promosi.\n"
+        "-- Akhiri dengan ajakan cek keranjang kuning!"
     )
     messages = [system_msg, {"role": "user", "content": user_msg}]
 
@@ -130,7 +127,7 @@ if submitted:
             resp = openai.ChatCompletion.create(
                 model=model,
                 messages=messages,
-                temperature=0.7,
+                temperature=0.8,
                 max_tokens=jumlah * 150
             )
             hasil = resp.choices[0].message.content.strip()

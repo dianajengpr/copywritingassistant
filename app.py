@@ -121,6 +121,7 @@ if submitted:
         "- Semua hasil harus memiliki jumlah kata kurang lebih sama dengan referensi (±10%).\n"
         "- Hindari kata-kata kaku seperti pada iklan atau brosur brosur seperti ‘kenyamanan dapur’, 'masak kilat'.\n"
         "- Gaya bahasa khas TikTok.\n"
+        "- Jangan menyebut harga.\n"
         "- Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
         "- Hindari tanda petik, emoji, angka, bullet, atau daftar.\n"
         "- Akhiri dengan ajakan cek keranjang kuning!\n"

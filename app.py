@@ -28,30 +28,43 @@ st.markdown(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Input Form
+# Form Input
 with st.form("copy_form", clear_on_submit=False):
     st.subheader("Input Data Produk")
-    nama_produk = st.text_input("📌 Nama Produk", placeholder="Contoh: Silikon Keran Air")
-    fitur_produk = st.text_area("⚙️ Fitur/Keunggulan (opsional)", placeholder="Misal: food-grade, tahan suhu tinggi…")
-    prompt_tambahan = st.text_area("📝 Instruksi Tambahan (opsional)", placeholder="Misal: pakai bahasa gaul Gen Z…")
+    nama_produk = st.text_input("📌 Nama Produk", placeholder="Contoh: Tatakan Kompor Ajaib")
+    fitur_produk = st.text_area(
+        "⚙️ Fitur/Keunggulan (opsional)",
+        placeholder="Misal: Bahan tebal anti goyang, hemat gas…"
+    )
+    prompt_tambahan = st.text_area(
+        "📝 Instruksi Tambahan (opsional)",
+        placeholder="Misal: Gunakan bahasa Gen Z, fun…"
+    )
 
     st.subheader("Upload Video Referensi (opsional)")
-    uploaded_file = st.file_uploader("📁 Upload File Video", type=["mp4","mov","avi"], help="opsional")
+    uploaded_file = st.file_uploader(
+        "📁 Upload File Video", type=["mp4","mov","avi"], help="opsional"
+    )
 
     st.subheader("Opsi Output")
     bahasa = st.selectbox("🌐 Bahasa", ["Indonesia","Malaysia","English"])
-    jumlah = st.number_input("🔢 Jumlah Copywriting", min_value=1, max_value=20, value=3)
-    model = st.selectbox("🤖 Model ChatGPT", ["gpt-4o-mini","gpt-4o","gpt-4","gpt-3.5-turbo"])
+    jumlah = st.number_input(
+        "🔢 Jumlah Copywriting", min_value=1, max_value=10, value=3
+    )
+    model = st.selectbox(
+        "🤖 Model ChatGPT", ["gpt-4o-mini","gpt-4o","gpt-4","gpt-3.5-turbo"]
+    )
     submitted = st.form_submit_button("Generate")
 
 # ─────────────────────────────────────────────────────────────────────────────
 if submitted:
-    # validasi nama produk
+    # Validasi nama produk
     if not nama_produk.strip():
         st.warning("Mohon isi Nama Produk dulu.")
         st.stop()
 
     transcript = None
+    hook_template = None
     # Transkripsi jika file video diupload
     if uploaded_file:
         with st.spinner("🔊 Transkripsi video referensi…"):
@@ -62,58 +75,55 @@ if submitted:
             with open(tmp_vid, "rb") as audio_f:
                 res = openai.Audio.transcribe("whisper-1", audio_f)
             transcript = res.get("text", "").strip()
-            # Tampilkan dan cek transkrip mentah
+            # Tampilkan transkrip mentah
             st.subheader("Transkrip Mentah dari Video Referensi")
             st.code(transcript or "(kosong)", language="text")
-            # Filter lirik lagu sederhana
-            lower = transcript.lower()
-            if any(kw in lower for kw in ["lucky girl syndrome","lucky girl","chorus","you are"]):
-                st.warning("⚠️ Transkrip terdeteksi lirik lagu, diabaikan.")
-                transcript = None
+            # Ambil kalimat pertama sebagai hook template
+            if transcript:
+                first_line = transcript.split("\n")[0].strip()
+                # simpan hook template (hingga 50 karakter)
+                hook_template = first_line[:50]
 
     # System prompt untuk AI
     system_msg = {
         "role": "system",
         "content": (
-            "Kamu adalah copywriter TikTok Gen Z: bahasa santai, tidak formal, relatable, struktur hook – keunggulan – CTA."
+            "Kamu adalah copywriter TikTok Gen Z: bahasa santai, tidak formal, relatable, struktur hook–keunggulan–CTA."
         )
     }
-    # Bangun user prompt
+
+    # Siapkan user prompt
     user_msg = f"Buat {jumlah} copywriting promosi produk TikTok untuk {nama_produk}.\n"
-
-    # Jika ada transkrip, gunakan sebagai referensi utama dan tiru gaya hook pertama
-    if transcript:
-        # ambil hook contoh dari transcript (kalimat pertama)
-        contoh_hook = transcript.split('\n')[0][:50]
+    # Jika ada transkrip, jadikan dasar utama + hook template
+    if transcript and hook_template:
         user_msg += (
-            "Gunakan transkrip berikut sebagai sumber utama dan tiru gaya hook pertama: " + contoh_hook + "...\n"
-            f"Transkrip: {transcript}\n"
+            f"Gunakan transkrip ini sebagai sumber utama dan tiru gaya hook pertama: ‘{hook_template}…’.\n"
+            f"Transkrip lengkap: {transcript}.\n"
         )
-
-    # Tambahkan detail produk
+    # Tambahkan detail produk jika ada
     if fitur_produk.strip():
         user_msg += f"Keunggulan: {fitur_produk.strip()}.\n"
     if prompt_tambahan.strip():
         user_msg += f"Instruksi tambahan: {prompt_tambahan.strip()}.\n"
 
-    # Aturan gaya final
+    # Tambahan instruksi tentang jumlah kata & variasi hook
     user_msg += (
         f"Bahasa: {bahasa}.\n"
-        "- Hindari kata formal/kaku.\n"
-        "- Tidak menggunakan kata ganti orang (aku, kamu, lo, gue, dia).\n"
-        "- Awali hook mirip pola kalimat pertama transkrip jika ada referensi; kalau tidak, buat hook catchy tanpa angka atau bullet.\n"
-        "- Semua hasil harus konsisten dengan gaya hook transkrip. Jangan hanya yang pertama. Bisa gunakan diksi yang berbeda asalkan makna atau karakternya tetap sama.\n"
-        "- Hindari gaya brosur atau kata-kata cringe seperti 'masak jadi momen terbaik' atau 'masak lebih seru'."
-        "- Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
+        "- Semua hasil harus memiliki jumlah kata kurang lebih sama dengan referensi (±10%).\n"
+        "- Jika hook transkrip adalah ‘","-")
+    # The above line is illustrative; actually integrate the full instructions below
+    user_msg += (
+        "- Semua hasil harus consistent dengan gaya hook referensi. Jangan hanya hasil pertama.\n"
+        "- Variasikan hook secara kreatif tapi jangan ubah makna utama. Contoh: Dalam Transkrip: 'Beli 1 aja, nanti nyesel!', maka variasinya bisa menjadi: ‘Yakin cuma mau beli 1 aja?’ atau ‘Kalau beli 1 aja nanti rugi!’.\n"
+        "- Hindari kata formal/kaku dan kata ganti orang (aku, kamu, lo, gue, dia).\n"
+        "- Awali dengan hook sesuai template jika tersedia, atau buat hook catchy.\n"
         "- Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
-        "- Jangan gunakan nomor, bullet point, atau daftar."
-        "- Gaya netral, tetap ringan dan relatable."
-        "- Gunakan bahasa ringan dan khas TikTok.\n"
+        "- Hindari bullet, nomor, tanda petik, dan emoji.\n"
         "- Akhiri dengan ajakan cek keranjang kuning!"
     )
     messages = [system_msg, {"role": "user", "content": user_msg}]
 
-    # Panggil OpenAI
+    # Kirim request ke OpenAI ChatCompletion
     with st.spinner("🚀 Menghubungi OpenAI…"):
         try:
             resp = openai.ChatCompletion.create(

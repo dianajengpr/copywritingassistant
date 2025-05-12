@@ -4,6 +4,7 @@ import os
 import subprocess
 import tempfile
 from typing import List
+
 import whisper
 import yt_dlp
 
@@ -25,9 +26,26 @@ st.title("📝 Copywriting Assistant by **PERKA**")
 st.markdown(
     """
     **Asisten Copywriting TikTok kamu— otomatis, praktis, dan siap jualan!**
-    Tinggal isi data produk, pilih output, dan dapatkan copywriting yang siap tarik perhatian di FYP.
+    Tinggal isi data produk, unggah/link video referensi (opsional), 
+    pilih output, dan dapatkan copywriting yang siap tarik perhatian di FYP.
     """
 )
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Custom logger & hook untuk yt-dlp
+class StreamlitLogger:
+    def debug(self, msg):
+        st.text(f"DEBUG: {msg}")
+    def warning(self, msg):
+        st.warning(f"WARNING: {msg}")
+    def error(self, msg):
+        st.error(f"ERROR: {msg}")
+
+def progress_hook(d):
+    if d.get("status") == "downloading":
+        percent = d.get("_percent_str", "").strip()
+        eta = d.get("_eta_str", "").strip()
+        st.text(f"Downloading… {percent} • ETA {eta}")
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  1) Form inputs
@@ -43,18 +61,13 @@ with st.form("copy_form", clear_on_submit=False):
         placeholder="Misal: Gunakan bahasa gaul generasi Z…"
     )
 
-    # >>> Tambahan: Input Video Referensi (opsional)
     st.subheader("Referensi Video (opsional)")
-    video_link = st.text_input(
-        "🔗 Link Video", placeholder="YouTube, TikTok, atau link video lain"
-    )
-    uploaded_file = st.file_uploader(
-        "📁 Upload File Video", type=["mp4", "mov", "avi"], help="(opsional)"
-    )
+    video_link = st.text_input("🔗 Link Video", placeholder="YouTube, TikTok, atau link video lain")
+    uploaded_file = st.file_uploader("📁 Upload File Video", type=["mp4", "mov", "avi"], help="(opsional)")
 
     st.subheader("Opsi Output")
     bahasa = st.selectbox(
-        "🌐 Bahasa Output", 
+        "🌐 Bahasa Output",
         options=["Indonesia", "Malaysia", "English"],
     )
     jumlah = st.number_input(
@@ -69,52 +82,74 @@ with st.form("copy_form", clear_on_submit=False):
     submitted = st.form_submit_button("Generate Copywriting")
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  2) When user clicks generate
+#  2) Ketika tombol generate diklik
 if submitted:
     if not nama_produk.strip():
         st.warning("Mohon isi **Nama Produk** terlebih dahulu.")
         st.stop()
 
-    # Jika ada video referensi, lakukan transkripsi
+    # 2a) Handle video download & transcribe
     transcript = None
     if video_link or uploaded_file:
-        with st.spinner("🔊 Transcribing video…"):
-            # simpan video ke file lokal
-            tmp_vid = None
+        st.subheader("Proses Transkripsi Video")
+        tmp_dir = tempfile.gettempdir()
+        tmp_vid = os.path.join(tmp_dir, "ref_video.mp4")
+
+        # Download atau simpan upload
+        try:
             if video_link:
-                tmp_vid = os.path.join(tempfile.gettempdir(), "ref_video.mp4")
-                ydl_opts = {'format': 'mp4', 'outtmpl': tmp_vid}
+                ydl_opts = {
+                    "format": "mp4",
+                    "outtmpl": tmp_vid,
+                    "logger": StreamlitLogger(),
+                    "progress_hooks": [progress_hook],
+                    "http_headers": {"User-Agent": "Mozilla/5.0"},
+                }
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    # cek dulu URL
+                    ydl.extract_info(video_link, download=False)
                     ydl.download([video_link])
+
             elif uploaded_file:
-                tmp_vid = os.path.join(tempfile.gettempdir(), uploaded_file.name)
                 with open(tmp_vid, "wb") as f:
                     f.write(uploaded_file.getbuffer())
 
-            # ekstrak audio
-            audio_path = os.path.join(tempfile.gettempdir(), "ref_audio.wav")
+        except Exception as e:
+            st.error(f"❌ Gagal download/video: {e}")
+            st.stop()
+
+        # Ekstrak audio
+        audio_path = os.path.join(tmp_dir, "ref_audio.wav")
+        try:
             subprocess.run([
                 "ffmpeg", "-y", "-i", tmp_vid,
                 "-vn", "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "1", audio_path
             ], check=True)
+        except Exception as e:
+            st.error(f"❌ Gagal ekstrak audio: {e}")
+            st.stop()
 
-            # transcribe dengan Whisper lokal
-            model_whisper = whisper.load_model("base")
-            res = model_whisper.transcribe(audio_path)
+        # Transkripsi pake Whisper
+        try:
+            whisper_model = whisper.load_model("base")
+            res = whisper_model.transcribe(audio_path)
             transcript = res.get("text", "").strip()
+            st.success("✅ Transkripsi selesai.")
+        except Exception as e:
+            st.error(f"❌ Gagal transkripsi: {e}")
+            st.stop()
 
-    # Build system+user prompt
+    # 2b) Build prompt untuk OpenAI
     messages: List[dict] = [
         {
             "role": "system",
             "content": (
-                "Kamu adalah ahli copywriting TikTok dengan gaya lucu, santai, dan "
-                "mengundang perhatian. Hasil harus dalam kalimat utuh: hook – body – CTA."
+                "Kamu adalah ahli copywriting TikTok dengan gaya lucu, santai, "
+                "dan mengundang perhatian. Hasil harus dalam kalimat utuh: hook – body – CTA."
             )
         }
     ]
 
-    # Construct user prompt
     user_prompt = (
         f"Buatkan {jumlah} copywriting promosi produk TikTok.\n"
         f"Produk: {nama_produk}.\n"
@@ -131,27 +166,27 @@ if submitted:
         "- Awali dengan kalimat yang mengundang perhatian atau bikin shock.\n"
         "- Jelaskan keunggulan produk secara singkat dan natural tanpa kesan iklan formal.\n"
         "- Akhiri dengan ajakan cek keranjang kuning!\n"
-        "- Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
+        "- Hindari tanda petik (\\" atau ')—emoji juga tidak usah.\n"
         "- Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
         "- Jangan gunakan nomor, bullet point, atau daftar."
     )
     messages.append({"role": "user", "content": user_prompt})
 
-    # Call OpenAI
+    # 3) Panggil OpenAI
     with st.spinner("🚀 Menghubungi OpenAI…"):
         try:
             response = openai.ChatCompletion.create(
                 model=model,
                 messages=messages,
                 temperature=0.7,
-                max_tokens= jumlah * 150,
+                max_tokens=jumlah * 150,
             )
             result = response.choices[0].message.content.strip()
         except Exception as e:
-            st.error(f"❌ Gagal generate: {e}")
+            st.error(f"❌ Gagal generate copywriting: {e}")
             st.stop()
 
-    # 3) Display and allow editing
+    # 4) Tampilkan hasil & opsi edit/download
     st.subheader("Hasil Copywriting")
     edited = st.text_area(
         "✏️ Anda bisa edit hasil di sini jika perlu:",
@@ -159,7 +194,6 @@ if submitted:
         height=300
     )
 
-    # 4) (optional) Export button
     st.download_button(
         "📥 Unduh sebagai .txt",
         edited,

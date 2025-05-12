@@ -114,13 +114,18 @@ if submitted:
     # The above line is illustrative; actually integrate the full instructions below
     user_msg += (
         "- Semua hasil harus consistent dengan gaya hook referensi. Jangan hanya hasil pertama.\n"
-        "- Variasikan hook secara kreatif tapi jangan ubah makna utama. Contoh: Dalam Transkrip: 'Beli 1 aja, nanti nyesel!', maka variasinya bisa menjadi: ‘Yakin cuma mau beli 1 aja?’ atau ‘Kalau beli 1 aja nanti rugi!’.\n"
-        "- Hindari kata formal/kaku dan kata ganti orang (aku, kamu, lo, gue, dia).\n"
-        "- Awali dengan hook sesuai template jika tersedia, atau buat hook catchy.\n"
+        "- Hindari kata formal/kaku.\n"
+        "- Tidak menggunakan kata ganti orang (aku, kamu, lo, gue, dia).\n"
+        "- Awali hook mirip pola kalimat pertama transkrip jika ada referensi; kalau tidak, buat hook catchy tanpa angka atau bullet.\n"
+        "- Semua hasil harus konsisten dengan gaya hook transkrip. Jangan hanya yang pertama. Bisa gunakan diksi yang berbeda asalkan makna atau karakternya tetap sama.\n"
+        "- Hindari gaya brosur atau kata-kata cringe seperti 'masak jadi momen terbaik' atau 'masak lebih seru'."
+        "- Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
         "- Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
-        "- Hindari bullet, nomor, tanda petik, dan emoji.\n"
+        "- Jangan gunakan nomor, bullet point, atau daftar."
+        "- Gaya netral, tetap ringan dan relatable."
+        "- Gunakan bahasa ringan dan khas TikTok.\n"
         "- Akhiri dengan ajakan cek keranjang kuning!"
-    )
+)
     messages = [system_msg, {"role": "user", "content": user_msg}]
 
     # Kirim request ke OpenAI ChatCompletion

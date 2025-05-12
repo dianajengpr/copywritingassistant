@@ -110,6 +110,9 @@ if submitted:
             "Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
             "Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
             "Jangan gunakan nomor, bullet point, atau daftar."
+            "Tidak memakai kata ganti orang seperti: aku, kamu, lo, gue, dia."
+            "Gaya netral, tetap ringan dan relatable."
+            "Gunakan hook atau kalimat awalan yang mirip mirip dengan transkrip."
             "tapi tetap hook-body-CTA.\n"
         )
     if fitur_produk.strip():
@@ -125,6 +128,9 @@ if submitted:
         "-- Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
         "-- Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
         "-- Jangan gunakan nomor, bullet point, atau daftar."
+        "-- Tidak memakai kata ganti orang seperti: aku, kamu, lo, gue, dia."
+        "-- Gaya netral, tetap ringan dan relatable."
+        "-- Gunakan hook atau kalimat awalan yang mirip mirip dengan transkrip."
         "-- Akhiri dengan ajakan cek keranjang kuning!"
     )
     messages = [system_msg, {"role": "user", "content": user_msg}]

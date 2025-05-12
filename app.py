@@ -102,6 +102,8 @@ if submitted:
         "- Hindari kata formal/kaku.\n"
         "- Tidak menggunakan kata ganti orang (aku, kamu, lo, gue, dia).\n"
         "- Awali hook mirip pola kalimat pertama transkrip jika ada referensi; kalau tidak, buat hook catchy tanpa angka atau bullet.\n"
+        "- Semua hasil harus konsisten dengan gaya hook transkrip. Jangan hanya yang pertama. Bisa gunakan diksi yang berbeda asalkan makna atau karakternya tetap sama.\n"
+        "- Hindari gaya brosur atau kata-kata cringe seperti 'masak jadi momen terbaik' atau 'masak lebih seru'."
         "- Hindari tanda petik (\" atau ')—emoji juga tidak usah.\n"
         "- Gunakan tanda seru (!) dan tanya (?) untuk penekanan.\n"
         "- Jangan gunakan nomor, bullet point, atau daftar."
